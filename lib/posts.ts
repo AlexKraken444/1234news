@@ -4,8 +4,7 @@ import type { NewsPost } from "@/lib/types";
 const PREFIX = "1234news/posts/";
 
 export async function getPosts(): Promise<NewsPost[]> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return [];
-  const { blobs } = await list({ prefix: PREFIX, token: process.env.BLOB_READ_WRITE_TOKEN });
+  const { blobs } = await list({ prefix: PREFIX });
   const posts = await Promise.all(
     blobs.map(async (blob) => {
       const response = await fetch(blob.url, { next: { revalidate: 60 } });
@@ -23,6 +22,5 @@ export async function savePost(post: NewsPost) {
     access: "public",
     contentType: "application/json",
     addRandomSuffix: false,
-    token: process.env.BLOB_READ_WRITE_TOKEN,
   });
 }

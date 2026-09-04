@@ -5,7 +5,6 @@ import type { NewsPost } from "@/lib/types";
 
 export async function POST(request: Request) {
   if (!(await isAdmin())) return NextResponse.json({ error: "Нет доступа" }, { status: 401 });
-  if (!process.env.BLOB_READ_WRITE_TOKEN) return NextResponse.json({ error: "Хранилище Vercel Blob не подключено" }, { status: 503 });
   const data = await request.formData();
   const type = data.get("type") === "video" ? "video" : "article";
   const title = String(data.get("title") || "").trim();
