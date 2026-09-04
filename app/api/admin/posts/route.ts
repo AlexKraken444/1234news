@@ -14,6 +14,12 @@ export async function POST(request: Request) {
   if (type === "video" && !videoUrl.startsWith("https://")) return NextResponse.json({ error: "Видео не загружено" }, { status: 400 });
   const base = { id: crypto.randomUUID(), type, title, description, createdAt: new Date().toISOString() };
   const post: NewsPost = type === "video" ? { ...base, type, videoUrl } : { ...base, type };
-  await savePost(post);
-  return NextResponse.json({ ok: true, post });
+  try {
+    await savePost(post);
+    return NextResponse.json({ ok: true, post });
+  } catch (error) {
+    console.error("Could not save post to Vercel Blob", error);
+    const message = error instanceof Error ? error.message : "Неизвестная ошибка хранилища";
+    return NextResponse.json({ error: `Ошибка Vercel Blob: ${message}` }, { status: 503 });
+  }
 }
