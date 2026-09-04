@@ -5,7 +5,7 @@ const COOKIE_NAME = "news_admin_session";
 const DEFAULT_PASSWORD_HASH = "1665c6f2003c6b313e6d6420afc77dfea020d165e50a0382427d1ee3b2ed6dc4";
 
 function signature(value: string) {
-  const secret = process.env.SESSION_SECRET;
+  const secret = process.env.SESSION_SECRET || process.env.BLOB_READ_WRITE_TOKEN;
   if (!secret) return "";
   return createHmac("sha256", secret).update(value).digest("hex");
 }
