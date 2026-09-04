@@ -1,11 +1,13 @@
 import { list, put } from "@vercel/blob";
 import type { NewsPost } from "@/lib/types";
+import { getBlobCredentials } from "@/lib/blob-credentials";
 
 const PREFIX = "1234news/posts/";
 
 export async function getPosts(): Promise<NewsPost[]> {
   try {
-    const { blobs } = await list({ prefix: PREFIX });
+    const { options } = getBlobCredentials();
+    const { blobs } = await list({ prefix: PREFIX, ...options });
     const posts = await Promise.all(
       blobs.map(async (blob) => {
         const response = await fetch(blob.url, { next: { revalidate: 60 } });
@@ -23,9 +25,11 @@ export async function getPosts(): Promise<NewsPost[]> {
 }
 
 export async function savePost(post: NewsPost) {
+  const { options } = getBlobCredentials();
   await put(`${PREFIX}${post.id}.json`, JSON.stringify(post), {
     access: "public",
     contentType: "application/json",
     addRandomSuffix: false,
+    ...options,
   });
 }

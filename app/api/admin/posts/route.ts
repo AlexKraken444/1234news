@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import { savePost } from "@/lib/posts";
 import type { NewsPost } from "@/lib/types";
+import { getBlobCredentials } from "@/lib/blob-credentials";
 
 export async function POST(request: Request) {
   if (!(await isAdmin())) return NextResponse.json({ error: "Нет доступа" }, { status: 401 });
@@ -20,6 +21,8 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Could not save post to Vercel Blob", error);
     const message = error instanceof Error ? error.message : "Неизвестная ошибка хранилища";
-    return NextResponse.json({ error: `Ошибка Vercel Blob: ${message}` }, { status: 503 });
+    const { status } = getBlobCredentials();
+    const diagnostic = `token: ${status.token ? "да" : "нет"}, oidc: ${status.oidc ? "да" : "нет"}, store: ${status.store ? "да" : "нет"}, среда: ${status.environment}`;
+    return NextResponse.json({ error: `Ошибка Vercel Blob: ${message} (${diagnostic})` }, { status: 503 });
   }
 }
