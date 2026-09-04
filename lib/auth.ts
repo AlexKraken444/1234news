@@ -1,7 +1,8 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
 const COOKIE_NAME = "news_admin_session";
+const DEFAULT_PASSWORD_HASH = "1665c6f2003c6b313e6d6420afc77dfea020d165e50a0382427d1ee3b2ed6dc4";
 
 function signature(value: string) {
   const secret = process.env.SESSION_SECRET;
@@ -11,8 +12,13 @@ function signature(value: string) {
 
 export function checkPassword(password: string) {
   const expected = process.env.ADMIN_PASSWORD;
-  if (!expected || password.length !== expected.length) return false;
-  return timingSafeEqual(Buffer.from(password), Buffer.from(expected));
+  if (expected) {
+    if (password.length !== expected.length) return false;
+    return timingSafeEqual(Buffer.from(password), Buffer.from(expected));
+  }
+
+  const providedHash = createHash("sha256").update(password).digest("hex");
+  return timingSafeEqual(Buffer.from(providedHash), Buffer.from(DEFAULT_PASSWORD_HASH));
 }
 
 export async function createAdminSession() {

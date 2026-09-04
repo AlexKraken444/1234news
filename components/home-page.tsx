@@ -18,7 +18,6 @@ export function HomePage({ posts }: { posts: NewsPost[] }) {
 
       <section className="hero" id="top">
         <motion.div className="hero-copy" initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .65 }}>
-          <span className="eyebrow"><span className="live-dot" /> Школьный эфир</span>
           <h1>Всё, чем живёт<br />наш <em>класс</em></h1>
           <p>Новости, события и свежие выпуски — без скучных объявлений и мелкого шрифта.</p>
         </motion.div>
