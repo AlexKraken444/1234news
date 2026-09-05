@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowDown, Clapperboard, Newspaper, Play } from "lucide-react";
+import Image from "next/image";
 import type { NewsPost } from "@/lib/types";
 
 const date = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" });
@@ -21,7 +22,7 @@ export function HomePage({ posts }: { posts: NewsPost[] }) {
     <main>
       <motion.header className="topbar" initial={{ y: -78 }} animate={{ y: 0 }} transition={{ type: "spring", stiffness: 180, damping: 22 }}>
         <a className="brand" href="#top" aria-label="1234 NEWS — наверх">
-          <span>1234</span> NEWS
+          <Image className="brand-logo" src="/1234-logo.png" alt="1234 NEWS" width={170} height={124} priority />
         </a>
         <a className="nav-link" href="#news">Все новости <ArrowDown size={16} /></a>
       </motion.header>
@@ -69,7 +70,7 @@ export function HomePage({ posts }: { posts: NewsPost[] }) {
           </div>
         )}
       </section>
-      <footer><span className="brand"><span>1234</span> NEWS</span><p>Сделано нашим классом — для нашего класса.</p></footer>
+      <footer><Image className="footer-logo" src="/1234-logo.png" alt="1234 NEWS" width={210} height={153} /><p>Сделано нашим классом — для нашего класса.</p></footer>
     </main>
   );
 }
