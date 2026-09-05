@@ -1,11 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Clapperboard, Newspaper, Play, Radio } from "lucide-react";
+import { ArrowDown, Clapperboard, Newspaper, Play } from "lucide-react";
 import type { NewsPost } from "@/lib/types";
 
-const postDate = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" });
-const today = new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
+const date = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" });
 
 function embedUrl(url: string) {
   try {
@@ -17,62 +16,60 @@ function embedUrl(url: string) {
   return null;
 }
 
-function VideoPlayer({ post }: { post: Extract<NewsPost, { type: "video" }> }) {
-  const embed = embedUrl(post.videoUrl);
-  return embed ? <iframe src={embed} title={post.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video controls preload="metadata" src={post.videoUrl} playsInline />;
-}
-
 export function HomePage({ posts }: { posts: NewsPost[] }) {
-  const lead = posts[0];
-  const latest = posts.slice(1);
-
   return (
-    <main className="news-site">
-      <motion.div className="utility-bar" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <span className="utility-date">{today}</span><span>Новости нашего класса</span>
-      </motion.div>
-      <motion.header className="news-header" initial={{ y: -24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: .5 }}>
-        <a className="news-logo" href="#top"><span>1234</span> NEWS</a>
-        <nav aria-label="Основная навигация"><a href="#latest">Последние новости</a><a href="#latest">Выпуски</a></nav>
-        <span className="edition">CLASS EDITION</span>
+    <main>
+      <motion.header className="topbar" initial={{ y: -78 }} animate={{ y: 0 }} transition={{ type: "spring", stiffness: 180, damping: 22 }}>
+        <a className="brand" href="#top" aria-label="1234 NEWS — наверх">
+          <span>1234</span> NEWS
+        </a>
+        <a className="nav-link" href="#news">Все новости <ArrowDown size={16} /></a>
       </motion.header>
-      <div className="breaking-strip">
-        <span><Radio size={14} /> В центре внимания</span>
-        <div className="breaking-window"><motion.p animate={{ x: ["0%", "-50%"] }} transition={{ duration: 24, repeat: Infinity, ease: "linear" }}>СОБЫТИЯ • ЛЮДИ • ПОБЕДЫ • ИДЕИ • СОБЫТИЯ • ЛЮДИ • ПОБЕДЫ • ИДЕИ •</motion.p></div>
-      </div>
-      <section className="newsroom" id="top">
-        {lead ? (
-          <motion.article className={`lead-story ${lead.type}`} initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .65, delay: .12 }}>
-            <div className="lead-copy">
-              <div className="story-meta"><span>{lead.type === "video" ? "Видеовыпуск" : "Главная новость"}</span><time>{postDate.format(new Date(lead.createdAt))}</time></div>
-              <h1>{lead.title}</h1><p>{lead.description}</p>
-              <a href="#latest" className="read-more">Вся лента <ArrowRight size={17} /></a>
-            </div>
-            <div className="lead-visual">
-              {lead.type === "video" ? <><VideoPlayer post={lead} /><span className="player-label"><Play size={14} fill="currentColor" /> Смотреть выпуск</span></> : <div className="editorial-mark"><Newspaper /><strong>ГЛАВНОЕ</strong><span>сегодня</span></div>}
-            </div>
-          </motion.article>
-        ) : (
-          <motion.div className="news-empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><span>Редакция 1234 NEWS</span><h1>Готовим первую новость</h1><p>Свежие материалы скоро появятся на этой странице.</p></motion.div>
-        )}
-        <section className="latest-section" id="latest">
-          <motion.div className="news-section-title" initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-            <div><span className="section-number">01</span><h2>Последние новости</h2></div><span className="material-count">{posts.length} материалов</span>
+
+      <section className="hero" id="top">
+        <motion.div className="hero-copy" initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .65 }}>
+          <h1>Всё, чем живёт<br />наш <em>класс</em></h1>
+          <p>Новости, события и свежие выпуски — без скучных объявлений и мелкого шрифта.</p>
+        </motion.div>
+        <motion.div className="hero-stamp" initial={{ opacity: 0, rotate: -18, scale: .7 }} animate={{ opacity: 1, rotate: [-8, -4, -8], scale: 1, y: [0, -8, 0] }} transition={{ opacity: { delay: .35 }, scale: { delay: .35, type: "spring" }, rotate: { duration: 5, repeat: Infinity, ease: "easeInOut" }, y: { duration: 3.2, repeat: Infinity, ease: "easeInOut" } }}>
+          <span>только</span><strong>СВЕЖЕЕ</strong><span>для своих</span>
+        </motion.div>
+        <div className="ticker" aria-hidden="true"><div>КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ • КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ •</div></div>
+      </section>
+
+      <section className="feed" id="news">
+        <motion.div className="section-heading" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: .55 }}>
+          <div><span>01 / ЛЕНТА</span><h2>Последние новости</h2></div>
+          <span className="count">{String(posts.length).padStart(2, "0")} материалов</span>
+        </motion.div>
+
+        {posts.length === 0 ? (
+          <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <Newspaper size={42} />
+            <h3>Редакция уже на связи</h3>
+            <p>Первая новость скоро появится здесь. Проверяй ленту!</p>
           </motion.div>
-          <div className="editorial-grid">
-            {latest.map((post, index) => (
-              <motion.article className={`news-card ${post.type}`} key={post.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-70px" }} transition={{ duration: .5, delay: Math.min(index * .06, .24) }}>
-                {post.type === "video" && <div className="news-video"><VideoPlayer post={post} /><span><Play size={13} fill="currentColor" /> Видео</span></div>}
-                <div className="news-card-content">
-                  <div className="story-meta"><span>{post.type === "video" ? <Clapperboard size={14} /> : <Newspaper size={14} />}{post.type === "video" ? "Выпуск" : "Новости"}</span><time>{postDate.format(new Date(post.createdAt))}</time></div>
-                  <h3>{post.title}</h3><p>{post.description}</p>
+        ) : (
+          <div className="post-grid">
+            {posts.map((post, index) => (
+              <motion.article className={`post-card ${post.type}`} key={post.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ delay: Math.min(index * .08, .3) }}>
+                {post.type === "video" && (
+                  <div className="video-wrap">
+                    {embedUrl(post.videoUrl) ? <iframe src={embedUrl(post.videoUrl)!} title={post.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video controls preload="metadata" src={post.videoUrl} playsInline />}
+                    <span className="video-badge"><Play size={14} fill="currentColor" /> ВЫПУСК</span>
+                  </div>
+                )}
+                <div className="card-body">
+                  <div className="meta"><span>{post.type === "video" ? <Clapperboard size={15} /> : <Newspaper size={15} />}{post.type === "video" ? "Видео" : "Статья"}</span><time>{date.format(new Date(post.createdAt))}</time></div>
+                  <h3>{post.title}</h3>
+                  <p>{post.description}</p>
                 </div>
               </motion.article>
             ))}
           </div>
-        </section>
+        )}
       </section>
-      <footer className="news-footer"><span className="news-logo"><span>1234</span> NEWS</span><p>Независимая редакция нашего класса</p><span>© {new Date().getFullYear()}</span></footer>
+      <footer><span className="brand"><span>1234</span> NEWS</span><p>Сделано нашим классом — для нашего класса.</p></footer>
     </main>
   );
 }
