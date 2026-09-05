@@ -54,3 +54,10 @@ export async function updatePost(post: NewsPost) {
     RETURNING id`;
   if (result.length === 0) throw new Error("Публикация не найдена");
 }
+
+export async function deletePost(id: string) {
+  const sql = await ensureTable();
+  const result = await sql`DELETE FROM news_posts WHERE id = ${id} RETURNING video_url`;
+  if (result.length === 0) throw new Error("Публикация не найдена");
+  return result[0].video_url ? String(result[0].video_url) : null;
+}

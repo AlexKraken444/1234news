@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { savePost, updatePost } from "@/lib/posts";
+import { deletePost, savePost, updatePost } from "@/lib/posts";
+import { deleteVideo } from "@/lib/videos";
 import type { NewsPost } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -43,5 +44,21 @@ export async function PATCH(request: Request) {
     console.error("Could not update post in PostgreSQL", error);
     const message = error instanceof Error ? error.message : "Неизвестная ошибка базы данных";
     return NextResponse.json({ error: `Ошибка базы данных: ${message}` }, { status: 503 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  if (!(await isAdmin())) return NextResponse.json({ error: "Нет доступа" }, { status: 401 });
+  const id = String((await request.json()).id || "");
+  if (!id) return NextResponse.json({ error: "Не указан материал" }, { status: 400 });
+  try {
+    const videoUrl = await deletePost(id);
+    const videoId = videoUrl?.match(/^\/api\/videos\/([a-f0-9-]{36})$/i)?.[1];
+    if (videoId) await deleteVideo(videoId);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Could not delete post", error);
+    const message = error instanceof Error ? error.message : "Неизвестная ошибка базы данных";
+    return NextResponse.json({ error: `Не удалось удалить: ${message}` }, { status: 503 });
   }
 }

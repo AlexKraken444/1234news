@@ -57,3 +57,8 @@ export async function getVideoChunks(id: string, from: number, to: number) {
     ORDER BY chunk_index`;
   return rows.map((row) => Buffer.from(String(row.data), "base64"));
 }
+
+export async function deleteVideo(id: string) {
+  const sql = await ensureVideoTables();
+  await sql`DELETE FROM news_videos WHERE id = ${id}`;
+}

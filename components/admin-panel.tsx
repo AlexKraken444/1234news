@@ -18,6 +18,7 @@ export function AdminPanel({ authenticated, initialPosts }: { authenticated: boo
   const [editing, setEditing] = useState<NewsPost | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const videoInput = useRef<HTMLInputElement>(null);
 
   function chooseVideo(file?: File) {
@@ -89,6 +90,23 @@ export function AdminPanel({ authenticated, initialPosts }: { authenticated: boo
       setStatus({ kind: "success", message: "Изменения сохранены." });
     } catch (error) {
       setStatus({ kind: "error", message: error instanceof Error ? error.message : "Что-то пошло не так" });
+    }
+  }
+
+  async function removePost(post: NewsPost) {
+    if (!window.confirm(`Удалить «${post.title}»? Отменить это действие будет нельзя.`)) return;
+    setDeletingId(post.id);
+    setStatus({ kind: "loading", message: "Удаляем…" });
+    try {
+      const response = await fetch("/api/admin/posts", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: post.id }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Не удалось удалить");
+      setPosts((current) => current.filter((item) => item.id !== post.id));
+      setStatus({ kind: "success", message: "Материал удалён." });
+    } catch (error) {
+      setStatus({ kind: "error", message: error instanceof Error ? error.message : "Что-то пошло не так" });
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -164,7 +182,10 @@ export function AdminPanel({ authenticated, initialPosts }: { authenticated: boo
             <motion.article className="admin-post" key={post.id} layout initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: Math.min(index * .06, .3) }} whileHover={{ x: 6 }}>
               <span className={`post-kind ${post.type}`}>{post.type === "video" ? <Video size={15} /> : <FileText size={15} />}{post.type === "video" ? "Видео" : "Статья"}</span>
               <div><h3>{post.title}</h3><p>{post.description}</p></div>
-              <button className="edit-button" onClick={() => { setEditing(post); setStatus({ kind: "idle" }); }}><Pencil size={16} /> Редактировать</button>
+              <div className="post-actions">
+                <button className="edit-button" onClick={() => { setEditing(post); setStatus({ kind: "idle" }); }}><Pencil size={16} /> Редактировать</button>
+                <button className="delete-button" disabled={deletingId === post.id} onClick={() => removePost(post)}>{deletingId === post.id ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />} Удалить</button>
+              </div>
             </motion.article>
           ))}
         </div>
