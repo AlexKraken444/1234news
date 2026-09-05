@@ -17,7 +17,8 @@ function embedUrl(url: string) {
   return null;
 }
 
-export function HomePage({ posts }: { posts: NewsPost[] }) {
+export function HomePage({ posts, tickerText }: { posts: NewsPost[]; tickerText: string }) {
+  const tickerLine = Array(12).fill(tickerText).join(" • ") + " • ";
   return (
     <main>
       <motion.header className="topbar" initial={{ y: -78 }} animate={{ y: 0 }} transition={{ type: "spring", stiffness: 180, damping: 22 }}>
@@ -37,8 +38,8 @@ export function HomePage({ posts }: { posts: NewsPost[] }) {
         </motion.div>
         <div className="ticker" aria-hidden="true">
           <div className="ticker-track">
-            <span>КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ • КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ •&nbsp;</span>
-            <span>КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ • КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ •&nbsp;</span>
+            <span>{tickerLine}&nbsp;</span>
+            <span>{tickerLine}&nbsp;</span>
           </div>
         </div>
       </section>

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Check, FileText, Film, Link as LinkIcon, LoaderCircle, LockKeyhole, LogOut, Pencil, Sparkles, Trash2, Upload, UploadCloud, Video, X } from "lucide-react";
+import { ArrowLeft, Check, FileText, Film, Link as LinkIcon, LoaderCircle, LockKeyhole, LogOut, Megaphone, Pencil, Sparkles, Trash2, Upload, UploadCloud, Video, X } from "lucide-react";
 import Link from "next/link";
 import type { NewsPost } from "@/lib/types";
 
@@ -10,7 +10,7 @@ type Status = { kind: "idle" | "loading" | "success" | "error"; message?: string
 const MAX_VIDEO_SIZE = 80 * 1024 * 1024;
 const VIDEO_CHUNK_SIZE = 1024 * 1024;
 
-export function AdminPanel({ authenticated, initialPosts }: { authenticated: boolean; initialPosts: NewsPost[] }) {
+export function AdminPanel({ authenticated, initialPosts, initialTickerText }: { authenticated: boolean; initialPosts: NewsPost[]; initialTickerText: string }) {
   const [loggedIn, setLoggedIn] = useState(authenticated);
   const [kind, setKind] = useState<"article" | "video">("article");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -19,6 +19,8 @@ export function AdminPanel({ authenticated, initialPosts }: { authenticated: boo
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [tickerText, setTickerText] = useState(initialTickerText);
+  const [tickerStatus, setTickerStatus] = useState<Status>({ kind: "idle" });
   const videoInput = useRef<HTMLInputElement>(null);
 
   function chooseVideo(file?: File) {
@@ -110,6 +112,20 @@ export function AdminPanel({ authenticated, initialPosts }: { authenticated: boo
     }
   }
 
+  async function updateTicker(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setTickerStatus({ kind: "loading", message: "Сохраняем…" });
+    try {
+      const response = await fetch("/api/admin/ticker", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: tickerText }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Не удалось сохранить");
+      setTickerText(result.text);
+      setTickerStatus({ kind: "success", message: "Бегущая строка обновлена." });
+    } catch (error) {
+      setTickerStatus({ kind: "error", message: error instanceof Error ? error.message : "Что-то пошло не так" });
+    }
+  }
+
   if (!loggedIn) return (
     <main className="admin-shell login-shell">
       <Link href="/" className="back"><ArrowLeft size={17} /> На сайт</Link>
@@ -168,6 +184,23 @@ export function AdminPanel({ authenticated, initialPosts }: { authenticated: boo
             <button className="primary publish" disabled={status.kind === "loading"}>{status.kind === "loading" ? <LoaderCircle className="spin" /> : <Upload size={18} />} {status.kind === "loading" ? status.message : "Опубликовать"}</button>
             {status.kind === "success" && <p className="form-message success"><Check size={18} /> {status.message}</p>}
             {status.kind === "error" && <p className="form-message error">{status.message}</p>}
+          </form>
+        </motion.div>
+      </section>
+      <section className="ticker-editor-section">
+        <motion.div className="ticker-editor" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <div className="ticker-editor-copy">
+            <span className="icon-box"><Megaphone /></span>
+            <span className="eyebrow">Бегущая строка</span>
+            <h2>Короткие новости</h2>
+            <p>Напиши объявления или новости для бесконечной ленты. Разделяй сообщения знаком •</p>
+          </div>
+          <form onSubmit={updateTicker}>
+            <label>Текст ленты<textarea value={tickerText} onChange={(event) => setTickerText(event.target.value)} required minLength={3} maxLength={500} rows={5} placeholder="ЗАВТРА КОНТРОЛЬНАЯ • МЫ ВЫИГРАЛИ МАТЧ" /></label>
+            <div className="ticker-preview"><div>{tickerText || "Текст появится здесь"} • {tickerText || "Текст появится здесь"} •</div></div>
+            <button className="primary" disabled={tickerStatus.kind === "loading"}>{tickerStatus.kind === "loading" ? <LoaderCircle className="spin" /> : <Check size={18} />} {tickerStatus.kind === "loading" ? tickerStatus.message : "Обновить ленту"}</button>
+            {tickerStatus.kind === "success" && <p className="form-message success"><Check size={18} /> {tickerStatus.message}</p>}
+            {tickerStatus.kind === "error" && <p className="form-message error">{tickerStatus.message}</p>}
           </form>
         </motion.div>
       </section>
