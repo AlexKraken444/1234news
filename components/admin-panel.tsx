@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Check, FileText, Link as LinkIcon, LoaderCircle, LockKeyhole, LogOut, Pencil, Sparkles, Upload, Video, X } from "lucide-react";
+import { ArrowLeft, Check, FileText, Film, Link as LinkIcon, LoaderCircle, LockKeyhole, LogOut, Pencil, Sparkles, Trash2, Upload, UploadCloud, Video, X } from "lucide-react";
 import Link from "next/link";
 import type { NewsPost } from "@/lib/types";
 
 type Status = { kind: "idle" | "loading" | "success" | "error"; message?: string };
+const MAX_VIDEO_SIZE = 80 * 1024 * 1024;
+const VIDEO_CHUNK_SIZE = 1024 * 1024;
 
 export function AdminPanel({ authenticated, initialPosts }: { authenticated: boolean; initialPosts: NewsPost[] }) {
   const [loggedIn, setLoggedIn] = useState(authenticated);
@@ -14,6 +16,40 @@ export function AdminPanel({ authenticated, initialPosts }: { authenticated: boo
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [posts, setPosts] = useState(initialPosts);
   const [editing, setEditing] = useState<NewsPost | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const videoInput = useRef<HTMLInputElement>(null);
+
+  function chooseVideo(file?: File) {
+    if (!file) return;
+    if (!file.type.startsWith("video/")) return setStatus({ kind: "error", message: "Перетащи видеофайл" });
+    if (file.size > MAX_VIDEO_SIZE) return setStatus({ kind: "error", message: "Видео должно быть не больше 80 МБ" });
+    setVideoFile(file);
+    setStatus({ kind: "idle" });
+  }
+
+  async function uploadVideo(file: File) {
+    const id = crypto.randomUUID();
+    const chunkCount = Math.ceil(file.size / VIDEO_CHUNK_SIZE);
+    for (let index = 0; index < chunkCount; index++) {
+      const percent = Math.round((index / chunkCount) * 100);
+      setStatus({ kind: "loading", message: `Загружаем видео: ${percent}%` });
+      const response = await fetch("/api/admin/videos", {
+        method: "POST",
+        headers: {
+          "x-video-id": id,
+          "x-file-name": encodeURIComponent(file.name),
+          "x-content-type": file.type,
+          "x-total-size": String(file.size),
+          "x-chunk-count": String(chunkCount),
+          "x-chunk-index": String(index),
+        },
+        body: file.slice(index * VIDEO_CHUNK_SIZE, Math.min((index + 1) * VIDEO_CHUNK_SIZE, file.size)),
+      });
+      if (!response.ok) throw new Error((await response.json()).error || "Не удалось загрузить видео");
+    }
+    return `/api/videos/${id}`;
+  }
 
   async function login(formData: FormData) {
     setStatus({ kind: "loading" });
@@ -26,11 +62,13 @@ export function AdminPanel({ authenticated, initialPosts }: { authenticated: boo
     setStatus({ kind: "loading", message: "Публикуем…" });
     try {
       formData.set("type", kind);
+      if (kind === "video" && videoFile) formData.set("videoUrl", await uploadVideo(videoFile));
       const response = await fetch("/api/admin/posts", { method: "POST", body: formData });
       if (!response.ok) throw new Error((await response.json()).error || "Не удалось опубликовать");
       const result = await response.json();
       setPosts((current) => [result.post, ...current]);
       setStatus({ kind: "success", message: "Опубликовано! Материал уже в ленте." });
+      setVideoFile(null);
       (document.getElementById("publish-form") as HTMLFormElement)?.reset();
     } catch (error) {
       setStatus({ kind: "error", message: error instanceof Error ? error.message : "Что-то пошло не так" });
@@ -82,7 +120,33 @@ export function AdminPanel({ authenticated, initialPosts }: { authenticated: boo
           <form id="publish-form" action={publish}>
             <label>Заголовок<input name="title" required maxLength={120} placeholder={kind === "article" ? "Например: Мы выиграли олимпиаду" : "Например: Выпуск №7"} /></label>
             <label>Описание<textarea name="description" required maxLength={3000} rows={7} placeholder="Расскажи самое важное…" /></label>
-            {kind === "video" && <label className="upload-field"><span><LinkIcon /> Ссылка на видео</span><input name="videoUrl" type="url" placeholder="https://youtube.com/watch?v=…" required /><small>YouTube, Rutube, VK Video или прямая ссылка на MP4/WebM</small></label>}
+            {kind === "video" && <>
+              <div
+                className={`video-dropzone${dragging ? " dragging" : ""}${videoFile ? " selected" : ""}`}
+                onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
+                onDragOver={(event) => event.preventDefault()}
+                onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false); }}
+                onDrop={(event) => { event.preventDefault(); setDragging(false); chooseVideo(event.dataTransfer.files[0]); }}
+                onClick={() => videoInput.current?.click()}
+                onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") videoInput.current?.click(); }}
+                role="button"
+                tabIndex={0}
+              >
+                <input ref={videoInput} className="visually-hidden" type="file" accept="video/*" onChange={(event) => chooseVideo(event.target.files?.[0])} />
+                {videoFile ? <>
+                  <span className="drop-icon"><Film /></span>
+                  <strong>{videoFile.name}</strong>
+                  <small>{(videoFile.size / 1024 / 1024).toFixed(1)} МБ · готово к загрузке</small>
+                  <button type="button" className="remove-video" onClick={(event) => { event.stopPropagation(); setVideoFile(null); if (videoInput.current) videoInput.current.value = ""; }}><Trash2 size={16} /> Убрать</button>
+                </> : <>
+                  <span className="drop-icon"><UploadCloud /></span>
+                  <strong>Перетащи видео сюда</strong>
+                  <small>или нажми, чтобы выбрать файл · до 80 МБ</small>
+                </>}
+              </div>
+              <div className="video-or"><span>или добавь ссылку</span></div>
+              <label className="upload-field"><span><LinkIcon /> Ссылка на видео</span><input name="videoUrl" type="url" placeholder="https://youtube.com/watch?v=…" required={!videoFile} /><small>YouTube, Rutube, VK Video или прямая ссылка</small></label>
+            </>}
             <button className="primary publish" disabled={status.kind === "loading"}>{status.kind === "loading" ? <LoaderCircle className="spin" /> : <Upload size={18} />} {status.kind === "loading" ? status.message : "Опубликовать"}</button>
             {status.kind === "success" && <p className="form-message success"><Check size={18} /> {status.message}</p>}
             {status.kind === "error" && <p className="form-message error">{status.message}</p>}

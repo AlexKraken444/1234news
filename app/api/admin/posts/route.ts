@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   const description = String(data.get("description") || "").trim();
   const videoUrl = String(data.get("videoUrl") || "");
   if (!title || title.length > 120 || !description || description.length > 3000) return NextResponse.json({ error: "Проверь заголовок и описание" }, { status: 400 });
-  if (type === "video" && !videoUrl.startsWith("https://")) return NextResponse.json({ error: "Видео не загружено" }, { status: 400 });
+  if (type === "video" && !(videoUrl.startsWith("https://") || videoUrl.startsWith("/api/videos/"))) return NextResponse.json({ error: "Видео не загружено" }, { status: 400 });
   const base = { id: crypto.randomUUID(), type, title, description, createdAt: new Date().toISOString() };
   const post: NewsPost = type === "video" ? { ...base, type, videoUrl } : { ...base, type };
   try {
@@ -33,7 +33,7 @@ export async function PATCH(request: Request) {
   const description = String(data.get("description") || "").trim();
   const videoUrl = String(data.get("videoUrl") || "").trim();
   if (!id || !title || title.length > 120 || !description || description.length > 3000) return NextResponse.json({ error: "Проверь заголовок и описание" }, { status: 400 });
-  if (type === "video" && !videoUrl.startsWith("https://")) return NextResponse.json({ error: "Укажи корректную ссылку на видео" }, { status: 400 });
+  if (type === "video" && !(videoUrl.startsWith("https://") || videoUrl.startsWith("/api/videos/"))) return NextResponse.json({ error: "Укажи корректную ссылку на видео" }, { status: 400 });
   const base = { id, type, title, description, createdAt: new Date().toISOString() };
   const post: NewsPost = type === "video" ? { ...base, type, videoUrl } : { ...base, type };
   try {
