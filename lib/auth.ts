@@ -1,11 +1,12 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { getDatabaseUrl } from "@/lib/database-url";
 
 const COOKIE_NAME = "news_admin_session";
 const DEFAULT_PASSWORD_HASH = "1665c6f2003c6b313e6d6420afc77dfea020d165e50a0382427d1ee3b2ed6dc4";
 
 function signature(value: string) {
-  const secret = process.env.SESSION_SECRET || process.env.DATABASE_URL;
+  const secret = process.env.SESSION_SECRET || getDatabaseUrl();
   if (!secret) return "";
   return createHmac("sha256", secret).update(value).digest("hex");
 }

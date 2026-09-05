@@ -1,9 +1,10 @@
 import { neon } from "@neondatabase/serverless";
 import type { NewsPost } from "@/lib/types";
+import { getDatabaseUrl } from "@/lib/database-url";
 
 function database() {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL не подключена");
+  const url = getDatabaseUrl();
+  if (!url) throw new Error("Vercel не передал строку подключения PostgreSQL в deployment");
   return neon(url);
 }
 
