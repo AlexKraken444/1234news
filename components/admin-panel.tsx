@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, FileText, LoaderCircle, LockKeyhole, LogOut, Upload, Video } from "lucide-react";
-import { upload } from "@vercel/blob/client";
+import { ArrowLeft, Check, FileText, Link as LinkIcon, LoaderCircle, LockKeyhole, LogOut, Upload, Video } from "lucide-react";
 import Link from "next/link";
 
 type Status = { kind: "idle" | "loading" | "success" | "error"; message?: string };
@@ -23,18 +22,7 @@ export function AdminPanel({ authenticated }: { authenticated: boolean }) {
   async function publish(formData: FormData) {
     setStatus({ kind: "loading", message: "Публикуем…" });
     try {
-      if (kind === "video") {
-        const file = formData.get("video") as File;
-        if (!file?.size) throw new Error("Выбери видеофайл");
-        if (file.size > 500 * 1024 * 1024) throw new Error("Максимальный размер видео — 500 МБ");
-        const blob = await upload(`1234news/videos/${Date.now()}-${file.name}`, file, {
-          access: "public",
-          handleUploadUrl: "/api/admin/upload",
-        });
-        formData.set("videoUrl", blob.url);
-      }
       formData.set("type", kind);
-      formData.delete("video");
       const response = await fetch("/api/admin/posts", { method: "POST", body: formData });
       if (!response.ok) throw new Error((await response.json()).error || "Не удалось опубликовать");
       setStatus({ kind: "success", message: "Опубликовано! Материал уже в ленте." });
@@ -72,7 +60,7 @@ export function AdminPanel({ authenticated }: { authenticated: boolean }) {
           <form id="publish-form" action={publish}>
             <label>Заголовок<input name="title" required maxLength={120} placeholder={kind === "article" ? "Например: Мы выиграли олимпиаду" : "Например: Выпуск №7"} /></label>
             <label>Описание<textarea name="description" required maxLength={3000} rows={7} placeholder="Расскажи самое важное…" /></label>
-            {kind === "video" && <label className="upload-field"><span><Upload /> Видео</span><input name="video" type="file" accept="video/mp4,video/webm,video/quicktime" required /><small>MP4, WebM или MOV · до 500 МБ</small></label>}
+            {kind === "video" && <label className="upload-field"><span><LinkIcon /> Ссылка на видео</span><input name="videoUrl" type="url" placeholder="https://youtube.com/watch?v=…" required /><small>YouTube, Rutube, VK Video или прямая ссылка на MP4/WebM</small></label>}
             <button className="primary publish" disabled={status.kind === "loading"}>{status.kind === "loading" ? <LoaderCircle className="spin" /> : <Upload size={18} />} {status.kind === "loading" ? status.message : "Опубликовать"}</button>
             {status.kind === "success" && <p className="form-message success"><Check size={18} /> {status.message}</p>}
             {status.kind === "error" && <p className="form-message error">{status.message}</p>}

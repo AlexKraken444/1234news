@@ -32,7 +32,7 @@ button,input,textarea { font:inherit; }
 .post-card:hover { transform:translate(-3px,-3px);box-shadow:10px 10px 0 var(--blue); }
 .post-card:nth-child(3n) { grid-column:span 12; }
 .video-wrap { position:relative;aspect-ratio:16/9;background:var(--ink);border-bottom:2px solid var(--ink); }
-.video-wrap video { width:100%;height:100%;object-fit:cover;display:block; }
+.video-wrap video,.video-wrap iframe { width:100%;height:100%;object-fit:cover;display:block;border:0; }
 .video-badge { position:absolute;top:14px;left:14px;background:var(--orange);color:white;padding:7px 10px;font-size:.7rem;font-weight:900;display:flex;gap:6px;align-items:center;pointer-events:none; }
 .card-body { padding:clamp(22px,3vw,36px); }
 .meta { display:flex;justify-content:space-between;gap:16px;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;font-weight:800; }

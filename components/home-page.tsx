@@ -6,6 +6,16 @@ import type { NewsPost } from "@/lib/types";
 
 const date = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" });
 
+function embedUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes("youtube.com")) return parsed.searchParams.get("v") ? `https://www.youtube.com/embed/${parsed.searchParams.get("v")}` : null;
+    if (parsed.hostname === "youtu.be") return `https://www.youtube.com/embed/${parsed.pathname.slice(1)}`;
+    if (parsed.hostname.includes("rutube.ru") && parsed.pathname.includes("/video/")) return `https://rutube.ru/play/embed/${parsed.pathname.split("/video/")[1].split("/")[0]}`;
+  } catch {}
+  return null;
+}
+
 export function HomePage({ posts }: { posts: NewsPost[] }) {
   return (
     <main>
@@ -45,7 +55,7 @@ export function HomePage({ posts }: { posts: NewsPost[] }) {
               <motion.article className={`post-card ${post.type}`} key={post.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-60px" }} transition={{ delay: Math.min(index * .08, .3) }}>
                 {post.type === "video" && (
                   <div className="video-wrap">
-                    <video controls preload="metadata" src={post.videoUrl} playsInline />
+                    {embedUrl(post.videoUrl) ? <iframe src={embedUrl(post.videoUrl)!} title={post.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen /> : <video controls preload="metadata" src={post.videoUrl} playsInline />}
                     <span className="video-badge"><Play size={14} fill="currentColor" /> ВЫПУСК</span>
                   </div>
                 )}
