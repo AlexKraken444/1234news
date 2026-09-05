@@ -44,3 +44,13 @@ export async function savePost(post: NewsPost) {
   await sql`INSERT INTO news_posts (id, type, title, description, video_url, created_at)
     VALUES (${post.id}, ${post.type}, ${post.title}, ${post.description}, ${videoUrl}, ${post.createdAt})`;
 }
+
+export async function updatePost(post: NewsPost) {
+  const sql = await ensureTable();
+  const videoUrl = post.type === "video" ? post.videoUrl : null;
+  const result = await sql`UPDATE news_posts
+    SET title = ${post.title}, description = ${post.description}, video_url = ${videoUrl}
+    WHERE id = ${post.id}
+    RETURNING id`;
+  if (result.length === 0) throw new Error("Публикация не найдена");
+}

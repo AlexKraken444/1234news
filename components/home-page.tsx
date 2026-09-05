@@ -19,29 +19,29 @@ function embedUrl(url: string) {
 export function HomePage({ posts }: { posts: NewsPost[] }) {
   return (
     <main>
-      <header className="topbar">
+      <motion.header className="topbar" initial={{ y: -78 }} animate={{ y: 0 }} transition={{ type: "spring", stiffness: 180, damping: 22 }}>
         <a className="brand" href="#top" aria-label="1234 NEWS — наверх">
           <span>1234</span> NEWS
         </a>
         <a className="nav-link" href="#news">Все новости <ArrowDown size={16} /></a>
-      </header>
+      </motion.header>
 
       <section className="hero" id="top">
         <motion.div className="hero-copy" initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .65 }}>
           <h1>Всё, чем живёт<br />наш <em>класс</em></h1>
           <p>Новости, события и свежие выпуски — без скучных объявлений и мелкого шрифта.</p>
         </motion.div>
-        <motion.div className="hero-stamp" initial={{ opacity: 0, rotate: -18, scale: .7 }} animate={{ opacity: 1, rotate: -8, scale: 1 }} transition={{ delay: .35, type: "spring" }}>
+        <motion.div className="hero-stamp" initial={{ opacity: 0, rotate: -18, scale: .7 }} animate={{ opacity: 1, rotate: [-8, -4, -8], scale: 1, y: [0, -8, 0] }} transition={{ opacity: { delay: .35 }, scale: { delay: .35, type: "spring" }, rotate: { duration: 5, repeat: Infinity, ease: "easeInOut" }, y: { duration: 3.2, repeat: Infinity, ease: "easeInOut" } }}>
           <span>только</span><strong>СВЕЖЕЕ</strong><span>для своих</span>
         </motion.div>
         <div className="ticker" aria-hidden="true"><div>КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ • КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ •</div></div>
       </section>
 
       <section className="feed" id="news">
-        <div className="section-heading">
+        <motion.div className="section-heading" initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-80px" }} transition={{ duration: .55 }}>
           <div><span>01 / ЛЕНТА</span><h2>Последние новости</h2></div>
           <span className="count">{String(posts.length).padStart(2, "0")} материалов</span>
-        </div>
+        </motion.div>
 
         {posts.length === 0 ? (
           <motion.div className="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

@@ -1,21 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, Check, FileText, Link as LinkIcon, LoaderCircle, LockKeyhole, LogOut, Upload, Video } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, Check, FileText, Link as LinkIcon, LoaderCircle, LockKeyhole, LogOut, Pencil, Sparkles, Upload, Video, X } from "lucide-react";
 import Link from "next/link";
+import type { NewsPost } from "@/lib/types";
 
 type Status = { kind: "idle" | "loading" | "success" | "error"; message?: string };
 
-export function AdminPanel({ authenticated }: { authenticated: boolean }) {
+export function AdminPanel({ authenticated, initialPosts }: { authenticated: boolean; initialPosts: NewsPost[] }) {
   const [loggedIn, setLoggedIn] = useState(authenticated);
   const [kind, setKind] = useState<"article" | "video">("article");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [posts, setPosts] = useState(initialPosts);
+  const [editing, setEditing] = useState<NewsPost | null>(null);
 
   async function login(formData: FormData) {
     setStatus({ kind: "loading" });
     const response = await fetch("/api/admin/login", { method: "POST", body: formData });
-    if (response.ok) { setLoggedIn(true); setStatus({ kind: "idle" }); }
+    if (response.ok) { window.location.reload(); }
     else setStatus({ kind: "error", message: "Пароль не подошёл" });
   }
 
@@ -25,8 +28,27 @@ export function AdminPanel({ authenticated }: { authenticated: boolean }) {
       formData.set("type", kind);
       const response = await fetch("/api/admin/posts", { method: "POST", body: formData });
       if (!response.ok) throw new Error((await response.json()).error || "Не удалось опубликовать");
+      const result = await response.json();
+      setPosts((current) => [result.post, ...current]);
       setStatus({ kind: "success", message: "Опубликовано! Материал уже в ленте." });
       (document.getElementById("publish-form") as HTMLFormElement)?.reset();
+    } catch (error) {
+      setStatus({ kind: "error", message: error instanceof Error ? error.message : "Что-то пошло не так" });
+    }
+  }
+
+  async function saveEdit(formData: FormData) {
+    if (!editing) return;
+    setStatus({ kind: "loading", message: "Сохраняем…" });
+    formData.set("id", editing.id);
+    formData.set("type", editing.type);
+    try {
+      const response = await fetch("/api/admin/posts", { method: "PATCH", body: formData });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Не удалось сохранить");
+      setPosts((current) => current.map((post) => post.id === editing.id ? { ...post, ...result.post, createdAt: post.createdAt } : post));
+      setEditing(null);
+      setStatus({ kind: "success", message: "Изменения сохранены." });
     } catch (error) {
       setStatus({ kind: "error", message: error instanceof Error ? error.message : "Что-то пошло не так" });
     }
@@ -67,6 +89,40 @@ export function AdminPanel({ authenticated }: { authenticated: boolean }) {
           </form>
         </motion.div>
       </section>
+      <section className="manage-posts">
+        <motion.div className="manage-heading" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <span className="eyebrow"><Sparkles size={15} /> Опубликовано</span>
+          <h2>Твои материалы</h2>
+          <p>{posts.length ? "Нажми «Редактировать», чтобы изменить публикацию." : "Здесь появятся опубликованные материалы."}</p>
+        </motion.div>
+        <div className="admin-post-list">
+          {posts.map((post, index) => (
+            <motion.article className="admin-post" key={post.id} layout initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: Math.min(index * .06, .3) }} whileHover={{ x: 6 }}>
+              <span className={`post-kind ${post.type}`}>{post.type === "video" ? <Video size={15} /> : <FileText size={15} />}{post.type === "video" ? "Видео" : "Статья"}</span>
+              <div><h3>{post.title}</h3><p>{post.description}</p></div>
+              <button className="edit-button" onClick={() => { setEditing(post); setStatus({ kind: "idle" }); }}><Pencil size={16} /> Редактировать</button>
+            </motion.article>
+          ))}
+        </div>
+      </section>
+      <AnimatePresence>
+        {editing && (
+          <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={(event) => { if (event.currentTarget === event.target) setEditing(null); }}>
+            <motion.div className="edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-title" initial={{ opacity: 0, scale: .92, y: 28 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: .94, y: 20 }} transition={{ type: "spring", stiffness: 340, damping: 28 }}>
+              <button className="modal-close" onClick={() => setEditing(null)} aria-label="Закрыть"><X /></button>
+              <span className="eyebrow">Редактирование</span>
+              <h2 id="edit-title">Обновить материал</h2>
+              <form action={saveEdit} key={editing.id}>
+                <label>Заголовок<input name="title" defaultValue={editing.title} required maxLength={120} autoFocus /></label>
+                <label>Описание<textarea name="description" defaultValue={editing.description} required maxLength={3000} rows={7} /></label>
+                {editing.type === "video" && <label>Ссылка на видео<input name="videoUrl" type="url" defaultValue={editing.videoUrl} required /></label>}
+                <button className="primary" disabled={status.kind === "loading"}>{status.kind === "loading" ? <LoaderCircle className="spin" /> : <Check size={18} />} Сохранить изменения</button>
+                {status.kind === "error" && <p className="form-message error">{status.message}</p>}
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
