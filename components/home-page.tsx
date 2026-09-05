@@ -35,7 +35,12 @@ export function HomePage({ posts }: { posts: NewsPost[] }) {
         <motion.div className="hero-stamp" initial={{ opacity: 0, rotate: -18, scale: .7 }} animate={{ opacity: 1, rotate: [-8, -4, -8], scale: 1, y: [0, -8, 0] }} transition={{ opacity: { delay: .35 }, scale: { delay: .35, type: "spring" }, rotate: { duration: 5, repeat: Infinity, ease: "easeInOut" }, y: { duration: 3.2, repeat: Infinity, ease: "easeInOut" } }}>
           <span>только</span><strong>СВЕЖЕЕ</strong><span>для своих</span>
         </motion.div>
-        <div className="ticker" aria-hidden="true"><div>КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ • КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ •</div></div>
+        <div className="ticker" aria-hidden="true">
+          <div className="ticker-track">
+            <span>КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ • КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ •&nbsp;</span>
+            <span>КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ • КЛАССНЫЕ НОВОСТИ • БЕЗ СПЛЕТЕН • ПОЧТИ •&nbsp;</span>
+          </div>
+        </div>
       </section>
 
       <section className="feed" id="news">
