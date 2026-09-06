@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowDown, Clapperboard, Newspaper, Play } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useRef } from "react";
 import type { NewsPost } from "@/lib/types";
 
 const date = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" });
@@ -19,6 +20,21 @@ function embedUrl(url: string) {
 
 export function HomePage({ posts, tickerText }: { posts: NewsPost[]; tickerText: string }) {
   const tickerLine = Array(12).fill(tickerText).join(" • ") + " • ";
+  const tickerTrack = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const track = tickerTrack.current;
+    if (!track) return;
+    const setConstantSpeed = () => {
+      const loopWidth = track.scrollWidth / 2;
+      track.style.animationDuration = `${Math.max(loopWidth / 90, 1)}s`;
+    };
+    setConstantSpeed();
+    const observer = new ResizeObserver(setConstantSpeed);
+    observer.observe(track);
+    return () => observer.disconnect();
+  }, [tickerText]);
+
   return (
     <main>
       <motion.header className="topbar" initial={{ y: -78 }} animate={{ y: 0 }} transition={{ type: "spring", stiffness: 180, damping: 22 }}>
@@ -37,7 +53,7 @@ export function HomePage({ posts, tickerText }: { posts: NewsPost[]; tickerText:
           <span>только</span><strong>СВЕЖЕЕ</strong><span>для своих</span>
         </motion.div>
         <div className="ticker" aria-hidden="true">
-          <div className="ticker-track">
+          <div className="ticker-track" ref={tickerTrack}>
             <span>{tickerLine}&nbsp;</span>
             <span>{tickerLine}&nbsp;</span>
           </div>
