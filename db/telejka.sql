@@ -61,3 +61,27 @@ CREATE TABLE IF NOT EXISTS rate_limits (
  count integer NOT NULL,
  resets_at timestamptz NOT NULL
 );
+
+-- Owner-requested cleanup of the exact accounts created by our smoke tests.
+-- UUID allowlist intentionally avoids matching real users by display name.
+CREATE TEMP TABLE telejka_cleanup_ids ON COMMIT DROP AS
+SELECT id FROM users WHERE id IN (
+ '805b3a4d-7fb3-47d9-8faf-bf5585512262',
+ 'e39c95d6-d39c-464b-9b54-1cd6b497db2a',
+ 'c983da50-493c-477b-808a-1e393129dfe9',
+ '8c17214c-3f71-4b08-8eb4-d6890aa53d30'
+);
+DELETE FROM conversations c
+WHERE c.created_by IN (SELECT id FROM telejka_cleanup_ids)
+AND NOT EXISTS (
+ SELECT 1 FROM members m WHERE m.conversation_id = c.id
+ AND m.user_id NOT IN (SELECT id FROM telejka_cleanup_ids)
+);
+-- Preserve any conversation that has acquired a real participant.
+UPDATE conversations c SET created_by = (
+ SELECT m.user_id FROM members m WHERE m.conversation_id = c.id
+ AND m.user_id NOT IN (SELECT id FROM telejka_cleanup_ids)
+ ORDER BY m.user_id LIMIT 1
+) WHERE c.created_by IN (SELECT id FROM telejka_cleanup_ids);
+DELETE FROM messages WHERE user_id IN (SELECT id FROM telejka_cleanup_ids);
+DELETE FROM users WHERE id IN (SELECT id FROM telejka_cleanup_ids);
