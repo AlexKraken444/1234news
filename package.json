@@ -10,11 +10,15 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "bcryptjs": "^3.0.3",
     "framer-motion": "latest",
     "lucide-react": "latest",
     "next": "latest",
+    "postgres": "^3.4.9",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "sharp": "^0.35.4",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "latest",
