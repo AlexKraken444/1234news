@@ -31,6 +31,12 @@ export function ensureDatabase() {
         // Serialize first-run setup across concurrent Vercel functions.
         await tx`SELECT pg_advisory_xact_lock(847291063)`;
         await tx.unsafe(schema);
+        await tx`CREATE TABLE IF NOT EXISTS telejka_migrations (name text PRIMARY KEY)`;
+        const [done]=await tx`SELECT 1 FROM telejka_migrations WHERE name='encrypted-media-v1'`;
+        if(!done){
+          await tx.unsafe(await readFile(join(process.cwd(), "db", "features.sql"), "utf8"));
+          await tx`INSERT INTO telejka_migrations(name) VALUES ('encrypted-media-v1')`;
+        }
       });
     })().catch((error) => {
       globalDb.telejkaSchema = undefined;
