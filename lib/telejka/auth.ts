@@ -1,6 +1,7 @@
+import {canManageVerification} from "./verification";
 import { cookies } from "next/headers";
 import { createHash, randomBytes } from "node:crypto";
-import { db, ensureDatabase } from "./db";
+import { db, databaseUrl, ensureDatabase } from "./db";
 export const COOKIE = "telejka_session";
 export const SESSION_SECONDS = 60 * 60 * 24 * 365;
 export function hashToken(token: string) {
@@ -22,6 +23,6 @@ export async function currentUser() {
   if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
   await ensureDatabase();
   const [user] =
-    await db()`SELECT u.id, u.name, u.bio, u.avatar, u.color, u.created_at FROM users u JOIN sessions s ON s.user_id = u.id WHERE s.token_hash = ${hashToken(token)} AND s.expires_at > now()`;
-  return user ?? null;
+    await db()`SELECT u.id, u.name, u.bio, u.avatar, u.color, u.verified, u.plus_until, COALESCE(u.plus_until>now(),false) plus_active, CASE WHEN u.plus_until>now() THEN u.name_color END name_color,u.is_private, u.created_at FROM users u JOIN sessions s ON s.user_id = u.id WHERE s.token_hash = ${hashToken(token)} AND s.expires_at > now()`;
+  return user ? {...user,id:String(user.id),can_manage_verification:canManageVerification(user.id)} : null;
 }
