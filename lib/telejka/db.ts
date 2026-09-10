@@ -37,6 +37,7 @@ export function ensureDatabase() {
           await tx.unsafe(await readFile(join(process.cwd(), "db", "features.sql"), "utf8"));
           await tx`INSERT INTO telejka_migrations(name) VALUES ('encrypted-media-v1')`;
         }
+        await tx`CREATE TABLE IF NOT EXISTS profile_music(user_id uuid PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,upload_id uuid NOT NULL REFERENCES uploads(id) ON DELETE CASCADE)`;
         const [communityDone]=await tx`SELECT 1 FROM telejka_migrations WHERE name='community-v1'`;
         const [badgesDone]=await tx`SELECT 1 FROM telejka_migrations WHERE name='verification-v1'`;
         if(!badgesDone){

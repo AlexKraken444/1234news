@@ -55,6 +55,30 @@ export async function communityApi(
 ): Promise<Response | undefined> {
   const sql = db(),
     route = path.join("/");
+  if(path[0]==='users'&&path[2]==='music'&&path.length===3&&req.method==='GET'){
+    const target=uuid.parse(path[1]);
+    const [person]=await sql`SELECT telejka_can_view(id,${userId}::uuid) allowed,COALESCE(plus_until>now(),false) active FROM users WHERE id=${target}`;
+    if(!person?.allowed)throw new FeatureError(404,'Профиль недоступен.');
+    if(!person.active&&target!==userId)return json(null);
+    const [music]=await sql`SELECT u.id,u.name,u.mime,u.size FROM profile_music m JOIN uploads u ON u.id=m.upload_id WHERE m.user_id=${target}`;
+    return json(music||null);
+  }
+  if(route==='me/music'&&req.method==='DELETE'){
+    await sql.begin(async tx=>{await tx`SELECT id FROM users WHERE id=${userId} FOR UPDATE`;const [old]=await tx`DELETE FROM profile_music WHERE user_id=${userId} RETURNING upload_id`;if(old)await tx`DELETE FROM uploads WHERE id=${old.upload_id} AND owner_id=${userId}`;});return json({ok:true});
+  }
+  if(route==='me/music'&&req.method==='POST'){
+    const {uploadId}=z.object({uploadId:uuid}).strict().parse(input);
+    await sql.begin(async tx=>{
+      const [me]=await tx`SELECT COALESCE(plus_until>now(),false) active FROM users WHERE id=${userId} FOR UPDATE`;
+      if(!me.active)throw new FeatureError(403,'Музыка доступна с TELEJKA+.');
+      const [file]=await tx`SELECT id FROM uploads WHERE id=${uploadId} AND owner_id=${userId} AND ready=true AND published=false AND chat_id IS NULL AND mime IN ('audio/mpeg','audio/mp4','audio/ogg','audio/wav','audio/x-wav','audio/webm') FOR UPDATE`;
+      if(!file)throw new FeatureError(400,'Аудиофайл недоступен.');
+      const [old]=await tx`SELECT upload_id FROM profile_music WHERE user_id=${userId}`;
+      await tx`INSERT INTO profile_music(user_id,upload_id) VALUES(${userId},${uploadId}) ON CONFLICT(user_id) DO UPDATE SET upload_id=EXCLUDED.upload_id`;
+      await tx`UPDATE uploads SET published=true WHERE id=${uploadId}`;
+      if(old)await tx`DELETE FROM uploads WHERE id=${old.upload_id} AND owner_id=${userId}`;
+    });return json({ok:true});
+  }
   if (route === "rewards" && req.method === "GET") {
     await sql`INSERT INTO wallets(user_id) VALUES(${userId}) ON CONFLICT DO NOTHING`;
     await sql`SELECT telejka_quest(${userId}::uuid)`;
