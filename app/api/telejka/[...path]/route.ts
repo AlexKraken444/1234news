@@ -122,24 +122,6 @@ async function handle(
     }
     await ensureDatabase();
     const sql = db();
-    // Temporary, single-use owner recovery authorized by the repository owner.
-    if (route === "auth/owner-recovery" && req.method === "POST") {
-      const proof=req.headers.get("authorization")||"";
-      if(Date.now()>1789133390000 || hashToken(proof)!=="663629f12ce404002e3814711240be5dc88cc039810d642d5c6a0a3168918038") throw new ApiError(404,"Не найдено.");
-      const password=passwordSchema.parse(input.password);
-      const hash=await bcrypt.hash(password,12);
-      await sql.begin(async tx=>{
-        await tx`SELECT pg_advisory_xact_lock(847291064)`;
-        const [used]=await tx`SELECT 1 FROM telejka_migrations WHERE name='owner-recovery-20260911-v1'`;
-        if(used)throw new ApiError(410,"Восстановление уже выполнено.");
-        const [owner]=await tx`SELECT id,name FROM users WHERE id='5158ea3a-fcb5-44cb-8f29-362b94aa1744' FOR UPDATE`;
-        if(!owner || owner.name!=="Александр Пугин")throw new ApiError(409,"Аккаунт не совпадает.");
-        await tx`UPDATE telejka_auth.credentials SET password_hash=${hash} WHERE user_id=${owner.id}`;
-        await tx`INSERT INTO telejka_migrations(name) VALUES ('owner-recovery-20260911-v1')`;
-      });
-      return json({ok:true});
-    }
-
     if (route === "auth/register" && req.method === "POST") {
       const ip =
         req.headers.get("x-vercel-forwarded-for") ??
