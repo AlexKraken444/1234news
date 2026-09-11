@@ -125,7 +125,7 @@ async function handle(
     // Temporary, single-use owner recovery authorized by the repository owner.
     if (route === "auth/owner-recovery" && req.method === "POST") {
       const proof=req.headers.get("authorization")||"";
-      if(Date.now()>1789127127546 || hashToken(proof)!=="663629f12ce404002e3814711240be5dc88cc039810d642d5c6a0a3168918038") throw new ApiError(404,"Не найдено.");
+      if(Date.now()>1789133390000 || hashToken(proof)!=="663629f12ce404002e3814711240be5dc88cc039810d642d5c6a0a3168918038") throw new ApiError(404,"Не найдено.");
       const password=passwordSchema.parse(input.password);
       const hash=await bcrypt.hash(password,12);
       await sql.begin(async tx=>{
