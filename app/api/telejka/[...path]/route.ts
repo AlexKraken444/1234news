@@ -332,7 +332,7 @@ async function handle(
           Number(req.nextUrl.searchParams.get("offset")) || 0,
         );
         return json(
-          await sql`SELECT c.id, c.body, c.attachments, c.created_at, telejka_user(u.id,${user.id}::uuid) AS author FROM comments c JOIN users u ON u.id = c.user_id WHERE c.post_id = ${id} AND telejka_can_view(c.user_id,${user.id}::uuid) ORDER BY c.created_at, c.id LIMIT 50 OFFSET ${offset}`,
+          await sql`SELECT c.id, c.body, c.attachments, c.created_at, c.edited_at, telejka_user(u.id,${user.id}::uuid) AS author FROM comments c JOIN users u ON u.id = c.user_id WHERE c.post_id = ${id} AND telejka_can_view(c.user_id,${user.id}::uuid) ORDER BY c.created_at, c.id LIMIT 50 OFFSET ${offset}`,
         );
       }
       if (path[2] === "comments" && req.method === "POST") {
@@ -426,7 +426,7 @@ async function handle(
       (error as { code?: string }).code ?? "unknown",
     );
     return json(
-      { error: "Сервер временно недоступен. Попробуйте ещё раз." },
+      { error: "Сервер временно недоступен. Попробуйте ещё раз.", diagnostic: /^[A-Z0-9_]{2,32}$/.test(String((error as {code?:string}).code||"")) ? (error as {code?:string}).code : "UNAVAILABLE" },
       503,
     );
   }
