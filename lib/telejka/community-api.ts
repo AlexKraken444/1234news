@@ -151,6 +151,8 @@ export async function communityApi(
       const [old] =
         await tx`SELECT 1 FROM baton_ledger WHERE user_id=${userId} AND ref=${"plus:" + requestId}`;
       if (old) return;
+      const [subscription]=await tx`SELECT plus_until>='9999-01-01'::timestamptz permanent FROM users WHERE id=${userId} FOR UPDATE`;
+      if(subscription.permanent)throw new FeatureError(400,"У тебя уже бессрочная TELEJKA+.");
       const unlimited = userId === VERIFICATION_OWNER_ID;
       if (!unlimited && Number(wallet.balance) < 100)
         throw new FeatureError(400, "Нужно 100 БАТОНчиков.");

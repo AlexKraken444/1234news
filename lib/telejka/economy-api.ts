@@ -11,7 +11,7 @@ export async function economyApi(req:NextRequest,path:string[],input:Record<stri
  const route=path.join('/'),sql=db(),unlimited=userId===VERIFICATION_OWNER_ID;
  if(route==='economy'&&req.method==='GET'){
   const items=await sql`SELECT i.*,(SELECT id FROM market_listings WHERE item_id=i.id AND status='open') listing_id FROM reward_items i WHERE owner_id=${userId} AND NOT consumed ORDER BY created_at DESC LIMIT 200`;
-  const [wallet]=await sql`SELECT balance::text balance FROM wallets WHERE user_id=${userId}`;
+  const [wallet]=await sql`SELECT trunc(balance)::text balance FROM wallets WHERE user_id=${userId}`;
   const [user]=await sql`SELECT plus_until FROM users WHERE id=${userId}`;
   return reply({items,balance:wallet?.balance||'0',unlimited,plus_until:user.plus_until});
  }
@@ -93,7 +93,8 @@ export async function economyApi(req:NextRequest,path:string[],input:Record<stri
    if((await tx`SELECT id FROM market_listings WHERE item_id=${itemId} AND status='open'`).length)throw new FeatureError(409,'Сначала снимите предмет с продажи.');
    const seconds=item.kind==='week'?604800:item.kind==='month'?2592000:item.kind==='year'?31536000:Number(item.seconds);
    await tx`SELECT user_id FROM wallets WHERE user_id=${userId} FOR UPDATE`;
-   await tx`SELECT id FROM users WHERE id=${userId} FOR UPDATE`;
+   const [active]=await tx`SELECT plus_until>='9999-01-01'::timestamptz permanent FROM users WHERE id=${userId} FOR UPDATE`;
+   if(active.permanent)throw new FeatureError(400,"У тебя уже бессрочная TELEJKA+. Предмет можно продать.");
    if(item.kind==='forever')await tx`UPDATE users SET plus_until='9999-12-31T00:00:00Z' WHERE id=${userId}`;
    else await tx`UPDATE users SET plus_until=least('9999-12-31'::timestamptz,greatest(COALESCE(plus_until,now()),now())+${seconds}*interval '1 second') WHERE id=${userId}`;
    await tx`UPDATE reward_items SET consumed=true WHERE id=${itemId}`;
